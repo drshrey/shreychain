@@ -1,6 +1,15 @@
+"""
+author: drshrey
+purpose: gain a more intimate understanding of the technical aspects of a blockchain
+"""
+
 from time import time
 import json
 import hashlib
+from uuid import uuid4
+
+from flask import Flask, jsonify, request
+
 
 class Blockchain:
     def __init__(self):
@@ -51,4 +60,33 @@ class Blockchain:
     def valid_proof(proof, last_proof):
         guess = f'{proof}{last_proof}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
-        return guess_hash[:4] == "0000"
+        return guess_hash[:5] == "0000"
+
+# API Config
+
+app = Flask(__name__)
+node_identifier = str(uuid4()).replace('-', '')
+
+blockchain = Blockchain()
+
+# API Routes
+
+@app.route('/mine', methods=['GET'])
+def mine():
+    return "mining"
+
+@app.route('/transactions/new', methods=['POST'])
+def new_transaction():
+    return "new transaction"
+
+@app.route('/chain', methods=['GET'])
+def full_chain():
+    response = {
+        'chain': blockchain.chain,
+        'length': len(blockchain.chain),
+    }
+
+    return jsonify(response), 200
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=5000)
