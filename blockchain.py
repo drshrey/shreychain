@@ -52,7 +52,6 @@ class Blockchain:
     def proof_of_work(self, last_proof):
         proof = 0
         while self.valid_proof(proof, last_proof) is False:
-            print("[-] wrong proof: {}".format(proof))
             proof += 1
         return proof
 
@@ -60,7 +59,7 @@ class Blockchain:
     def valid_proof(proof, last_proof):
         guess = f'{proof}{last_proof}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
-        return guess_hash[:5] == "0000"
+        return guess_hash[:5] == "00000"
 
 # API Config
 
@@ -73,11 +72,50 @@ blockchain = Blockchain()
 
 @app.route('/mine', methods=['GET'])
 def mine():
-    return "mining"
+    # We run the proof of work algorithm to get the next proof...
+    last_block = blockchain.last_block
+    last_proof = last_block['proof']
+    print("LAST PROOF", last_proof)
+    proof = blockchain.proof_of_work(last_proof)
+
+    # We must receive a reward for finding the proof.
+    # The sender is "0" to signify that this node has mined a new coin.
+    blockchain.new_transaction(
+        sender="0",
+        recipient=node_identifier,
+        amount=1,
+    )
+
+    # Forge the new Block by adding it to the chain
+    previous_hash = blockchain.hash(last_block)
+    block = blockchain.new_block(proof, previous_hash)
+
+    response = {
+        'message': "New Block Forged",
+        'index': block['index'],
+        'transactions': block['transactions'],
+        'proof': block['proof'],
+        'previous_hash': block['previous_hash'],
+    }
+    return jsonify(response), 200
 
 @app.route('/transactions/new', methods=['POST'])
 def new_transaction():
-    return "new transaction"
+    # get values
+    values = request.get_json()
+    print(values)
+
+    # validate
+    required = ['recipient', 'sender', 'amount']
+    if not all(k in required for k in values):
+        return "Input all args", 400
+
+    # create new transaction
+    new_block_index = blockchain.new_transaction(values.get('sender'),
+            values.get('recipient'), values.get('amount'))
+    return jsonify({ "message": f'Transaction will be added to Block {new_block_index}'}), 201
+
+    # return created transaction
 
 @app.route('/chain', methods=['GET'])
 def full_chain():
