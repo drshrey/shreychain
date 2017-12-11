@@ -122,7 +122,6 @@ def mine():
     # We run the proof of work algorithm to get the next proof...
     last_block = blockchain.last_block
     last_proof = last_block['proof']
-    print("LAST PROOF", last_proof)
     proof = blockchain.proof_of_work(last_proof)
 
     # We must receive a reward for finding the proof.
